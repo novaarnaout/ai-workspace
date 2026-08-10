@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.user import User
 from app.schemas.user import UserCreate
+from app.schemas.user_update import UserUpdate
 
 
 router = APIRouter(prefix="/users", tags=["Users"])
@@ -36,6 +37,8 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="User not found")
 
     return user
+
+
 @router.delete("/{user_id}")
 def delete_user(user_id: int, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == user_id).first()
@@ -49,3 +52,23 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
     return {
         "message": "User deleted successfully"
     }
+
+
+@router.put("/{user_id}")
+def update_user(
+    user_id: int,
+    user_data: UserUpdate,
+    db: Session = Depends(get_db),
+):
+    user = db.query(User).filter(User.id == user_id).first()
+
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user.name = user_data.name
+    user.email = user_data.email
+
+    db.commit()
+    db.refresh(user)
+
+    return user
