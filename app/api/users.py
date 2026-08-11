@@ -3,6 +3,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.dependencies import get_current_user
+from app.core.security import hash_password
 from app.models.user import User
 from app.schemas.user import UserCreate, UserResponse
 from app.schemas.user_update import UserUpdate
@@ -12,10 +14,14 @@ router = APIRouter(prefix="/users", tags=["Users"])
 
 
 @router.post("/", response_model=UserResponse)
-def create_user(user: UserCreate, db: Session = Depends(get_db)):
+def create_user(
+    user: UserCreate,
+    db: Session = Depends(get_db),
+):
     new_user = User(
         email=user.email,
         name=user.name,
+        password_hash=hash_password(user.password),
     )
 
     db.add(new_user)
@@ -34,12 +40,19 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/", response_model=list[UserResponse])
-def get_users(db: Session = Depends(get_db)):
+def get_users(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     return db.query(User).all()
 
 
 @router.get("/{user_id}", response_model=UserResponse)
-def get_user(user_id: int, db: Session = Depends(get_db)):
+def get_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     user = db.query(User).filter(User.id == user_id).first()
 
     if user is None:
@@ -52,7 +65,17 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
 
 
 @router.delete("/{user_id}")
-def delete_user(user_id: int, db: Session = Depends(get_db)):
+def delete_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.id != user_id:
+        raise HTTPException(
+            status_code=403,
+            detail="You can only delete your own account",
+        )
+
     user = db.query(User).filter(User.id == user_id).first()
 
     if user is None:
@@ -74,7 +97,14 @@ def update_user(
     user_id: int,
     user_data: UserUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    if current_user.id != user_id:
+        raise HTTPException(
+            status_code=403,
+            detail="You can only update your own account",
+        )
+
     user = db.query(User).filter(User.id == user_id).first()
 
     if user is None:
