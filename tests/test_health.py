@@ -1,3 +1,9 @@
+import os
+
+os.environ["DATABASE_URL"] = (
+    "postgresql+psycopg://postgres:postgres@localhost:5433/ai_workspace"
+)
+
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -46,6 +52,8 @@ def test_authenticated_users():
             "password": "Test123!",
         },
     )
+
+    assert login_response.status_code == 200
 
     token = login_response.json()["access_token"]
 

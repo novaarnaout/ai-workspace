@@ -4,8 +4,16 @@ from sqlalchemy.orm import DeclarativeBase, sessionmaker
 from app.core.config import settings
 
 
+database_url = settings.database_url
+
+if settings.environment == "test":
+    database_url = database_url.replace(
+        "@db:5432",
+        "@localhost:5433",
+    )
+
 engine = create_engine(
-    settings.database_url,
+    database_url,
     pool_pre_ping=True,
 )
 

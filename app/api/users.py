@@ -9,7 +9,6 @@ from app.models.user import User
 from app.schemas.user import UserCreate, UserResponse
 from app.schemas.user_update import UserUpdate
 
-
 router = APIRouter(prefix="/users", tags=["Users"])
 
 
@@ -45,6 +44,13 @@ def get_users(
     current_user: User = Depends(get_current_user),
 ):
     return db.query(User).all()
+
+
+@router.get("/me", response_model=UserResponse)
+def get_current_user_profile(
+    current_user: User = Depends(get_current_user),
+):
+    return current_user
 
 
 @router.get("/{user_id}", response_model=UserResponse)
