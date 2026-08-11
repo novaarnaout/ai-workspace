@@ -1,11 +1,26 @@
 import jwt
 
 from datetime import datetime, timedelta, timezone
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-SECRET_KEY = "change-this-secret-key"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+class AuthSettings(BaseSettings):
+    secret_key: str
+    algorithm: str = "HS256"
+    access_token_expire_minutes: int = 30
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+
+auth_settings = AuthSettings()
+
+SECRET_KEY = auth_settings.secret_key
+ALGORITHM = auth_settings.algorithm
+ACCESS_TOKEN_EXPIRE_MINUTES = auth_settings.access_token_expire_minutes
 
 
 def create_access_token(data: dict) -> str:
